@@ -35,7 +35,6 @@ SAVE_PRED_EVERY = TRAIN_SET / BATCH_SIZE + 1   # save model per epoch  (number o
 NUM_STEPS = SAVE_PRED_EVERY * 100 + 1  # 100 epoch
 
 
-
 def main():
     RANDOM_SEED = random.randint(1000, 9999)
     tf.set_random_seed(RANDOM_SEED)
