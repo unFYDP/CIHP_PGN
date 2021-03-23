@@ -32,8 +32,9 @@ def main():
     label_batch = tf.expand_dims(label, dim=0) # Add one batch dimension.
     edge_gt_batch = tf.expand_dims(edge_gt, dim=0)
 
-    # Create network.
-    net = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
+    # Create network
+    with tf.variable_scope('', reuse=False):
+        net = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
 
     # parsing net
     parsing_out1 = net.layers['parsing_fc']
@@ -44,6 +45,7 @@ def main():
 
     # combine resize
     parsing_out1 = tf.image.resize_images(parsing_out1, tf.shape(image_batch)[1: 3, ])
+    parsing_out2 = tf.image.resize_images(parsing_out2, tf.shape(image_batch)[1: 3, ])
 
     edge_out2 = tf.image.resize_images(edge_out2, tf.shape(image_batch)[1: 3, ])
 
