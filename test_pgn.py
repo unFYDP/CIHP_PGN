@@ -73,27 +73,25 @@ def main():
     edge_out2_150 = net_150.layers['edge_rf_fc']
     edge_out2_175 = net_175.layers['edge_rf_fc']
 
-
     # combine resize
-    parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out1_050, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out1_075, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out1_100, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out1_125, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out1_150, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out1_175, tf.shape(image_batch)[1:3,])]), axis=0)
+    parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out1_050, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_075, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_100, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_125, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_150, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_175, tf.shape(image_batch)[1: 3, ])]), axis=0)
 
-    parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out2_050, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out2_075, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out2_100, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out2_125, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out2_150, tf.shape(image_batch)[1:3,]),
-                                            tf.image.resize_images(parsing_out2_175, tf.shape(image_batch)[1:3,])]), axis=0)
+    parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out2_050, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_075, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_100, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_125, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_150, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_175, tf.shape(image_batch)[1: 3, ])]), axis=0)
 
-
-    edge_out2_100 = tf.image.resize_images(edge_out2_100, tf.shape(image_batch)[1:3,])
-    edge_out2_125 = tf.image.resize_images(edge_out2_125, tf.shape(image_batch)[1:3,])
-    edge_out2_150 = tf.image.resize_images(edge_out2_150, tf.shape(image_batch)[1:3,])
-    edge_out2_175 = tf.image.resize_images(edge_out2_175, tf.shape(image_batch)[1:3,])
+    edge_out2_100 = tf.image.resize_images(edge_out2_100, tf.shape(image_batch)[1: 3, ])
+    edge_out2_125 = tf.image.resize_images(edge_out2_125, tf.shape(image_batch)[1: 3, ])
+    edge_out2_150 = tf.image.resize_images(edge_out2_150, tf.shape(image_batch)[1: 3, ])
+    edge_out2_175 = tf.image.resize_images(edge_out2_175, tf.shape(image_batch)[1: 3, ])
     edge_out2 = tf.reduce_mean(tf.stack([edge_out2_100, edge_out2_125, edge_out2_150, edge_out2_175]), axis=0)
 
     raw_output = tf.reduce_mean(tf.stack([parsing_out1, parsing_out2]), axis=0)
@@ -116,7 +114,6 @@ def main():
     pred_scores = tf.reduce_max(raw_output_all, axis=3)
     raw_output_all = tf.argmax(raw_output_all, axis=3)
     pred_all = tf.expand_dims(raw_output_all, dim=3) # Create 4-d tensor.
-
 
     raw_edge = tf.reduce_mean(tf.stack([edge_out2]), axis=0)
     head_output, tail_output = tf.unstack(raw_edge, num=2, axis=0)
@@ -195,7 +192,6 @@ def main():
 
     coord.request_stop()
     coord.join(threads)
-
 
 
 if __name__ == '__main__':
