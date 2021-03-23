@@ -1,12 +1,9 @@
-import math
-import numpy as np 
 import tensorflow as tf
 
-from tensorflow.python.framework import ops
 
 def conv2d(input_, output, kernel, stride, relu, bn, name, stddev=0.01):
     with tf.variable_scope(name) as scope:
-    # Convolution for a given input and kernel
+        # Convolution for a given input and kernel
         shape = [kernel, kernel, input_.get_shape()[-1], output]
         w = tf.get_variable('w', shape, initializer=tf.truncated_normal_initializer(stddev=stddev))
         conv = tf.nn.conv2d(input_, w, strides=[1, stride, stride, 1], padding='SAME')
@@ -20,8 +17,10 @@ def conv2d(input_, output, kernel, stride, relu, bn, name, stddev=0.01):
             conv = tf.nn.relu(conv, name=scope.name)
         return conv
 
+
 def max_pool(input_, kernel, stride, name):
     return tf.nn.max_pool(input_, ksize=[1, kernel, kernel, 1], strides=[1, stride, stride, 1], padding='SAME', name=name)
+
 
 def linear(input_, output, name, stddev=0.02, bias_start=0.0):
     shape = input_.get_shape().as_list()
@@ -31,9 +30,10 @@ def linear(input_, output, name, stddev=0.02, bias_start=0.0):
         bias = tf.get_variable("bias", [output], initializer=tf.constant_initializer(bias_start))
         return tf.matmul(input_, matrix) + bias
 
+
 def atrous_conv2d(input_, output, kernel, rate, relu, name, stddev=0.01):
     with tf.variable_scope(name) as scope:
-    # Dilation convolution for a given input and kernel
+        # Dilation convolution for a given input and kernel
         shape = [kernel, kernel, input_.get_shape()[-1], output]
         w = tf.get_variable('w', shape, initializer=tf.truncated_normal_initializer(stddev=stddev))
         conv = tf.nn.atrous_conv2d(input_, w, rate, padding='SAME')
@@ -44,6 +44,7 @@ def atrous_conv2d(input_, output, kernel, rate, relu, name, stddev=0.01):
         if relu:
             conv = tf.nn.relu(conv, name=scope.name)
         return conv
+
 
 def gcn(input_, output, kernel, stride, relu, bn, name, stddev=0.01):
     with tf.variable_scope(name) as scope:
@@ -65,7 +66,7 @@ def gcn(input_, output, kernel, stride, relu, bn, name, stddev=0.01):
         if bn:
             conv1_1 = tf.layers.batch_normalization(conv1_1)
         if relu:
-            conv1_1 = tf.nn.relu(conv1_1, name=scope.name)        
+            conv1_1 = tf.nn.relu(conv1_1, name=scope.name)
 
         conv1_2 = tf.nn.conv2d(conv1_1, w1_2, strides=[1, stride, stride, 1], padding='SAME')
         conv1_2 = tf.nn.bias_add(conv1_2, b1_2)
@@ -73,7 +74,7 @@ def gcn(input_, output, kernel, stride, relu, bn, name, stddev=0.01):
             conv1_2 = tf.layers.batch_normalization(conv1_2)
         if relu:
             conv1_2 = tf.nn.relu(conv1_2, name=scope.name)
-        
+
         conv2_1 = tf.nn.conv2d(input_, w2_1, strides=[1, stride, stride, 1], padding='SAME')
         conv2_1 = tf.nn.bias_add(conv2_1, b2_1)
         if bn:
@@ -92,6 +93,7 @@ def gcn(input_, output, kernel, stride, relu, bn, name, stddev=0.01):
 
         return top
 
+
 def br(input_, output, kernel, stride, name):
     with tf.variable_scope(name) as scope:
 
@@ -100,6 +102,7 @@ def br(input_, output, kernel, stride, name):
         top = tf.add_n([input_, br_conv2])
 
         return top
+
 
 def residual_module(input_, output, is_BN, name):
     mid_channel = output >> 1
@@ -111,7 +114,8 @@ def residual_module(input_, output, is_BN, name):
         top = tf.add_n([conv3, conv_side])
         top = tf.nn.relu(top, name=scope.name)
 
-    return top 
+    return top
+
 
 def gcn_residual_module(input_, output, gcn_kernel, is_BN, name):
     mid_channel = output >> 1

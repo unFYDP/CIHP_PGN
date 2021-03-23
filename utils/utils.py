@@ -2,9 +2,6 @@ from PIL import Image
 import numpy as np
 import tensorflow as tf
 import os
-import scipy.misc
-from scipy.stats import multivariate_normal
-import matplotlib.pyplot as plt
 
 n_classes = 20
 # colour map
@@ -17,31 +14,33 @@ label_colours = [(0,0,0)
 #                 ,(128,0,0), (0,128,0), (128,128,0), (0,0,128), (128,0,128), (0,128,128)]
 #                 # 1=head, 2=torso, 3=upper arm, 4=lower arm, 5=upper leg, # 6=lower leg
 # image mean
-IMG_MEAN = np.array((104.00698793,116.66876762,122.67891434), dtype=np.float32)
-    
+IMG_MEAN = np.array((104.00698793, 116.66876762, 122.67891434), dtype=np.float32)
+
+
 def decode_labels(mask, num_images=1, num_classes=21):
     """Decode batch of segmentation masks.
-    
+
     Args:
       mask: result of inference after taking argmax.
       num_images: number of images to decode from the batch.
       num_classes: number of classes to predict (including background).
-    
+
     Returns:
-      A batch with num_images RGB images of the same size as the input. 
+      A batch with num_images RGB images of the same size as the input.
     """
     n, h, w, c = mask.shape
     assert(n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (n, num_images)
     outputs = np.zeros((num_images, h, w, 3), dtype=np.uint8)
     for i in range(num_images):
-      img = Image.new('RGB', (len(mask[i, 0]), len(mask[i])))
-      pixels = img.load()
-      for j_, j in enumerate(mask[i, :, :, 0]):
-          for k_, k in enumerate(j):
-              if k < num_classes:
-                  pixels[k_,j_] = label_colours[k]
-      outputs[i] = np.array(img)
+        img = Image.new('RGB', (len(mask[i, 0]), len(mask[i])))
+        pixels = img.load()
+        for j_, j in enumerate(mask[i, :, :, 0]):
+            for k_, k in enumerate(j):
+                if k < num_classes:
+                    pixels[k_, j_] = label_colours[k]
+        outputs[i] = np.array(img)
     return outputs
+
 
 def prepare_label(input_batch, new_size, one_hot=True):
     """Resize masks and perform one-hot encoding.
@@ -58,30 +57,31 @@ def prepare_label(input_batch, new_size, one_hot=True):
         input_batch = tf.image.resize_nearest_neighbor(input_batch, new_size) # as labels are integer numbers, need to use NN interp.
         input_batch = tf.squeeze(input_batch, squeeze_dims=[3]) # reducing the channel dimension.
         if one_hot:
-          input_batch = tf.one_hot(input_batch, depth=n_classes)
+            input_batch = tf.one_hot(input_batch, depth=n_classes)
     return input_batch
 
+
 def inv_preprocess(imgs, num_images):
-  """Inverse preprocessing of the batch of images.
-     Add the mean vector and convert from BGR to RGB.
-   
-  Args:
-    imgs: batch of input images.
-    num_images: number of images to apply the inverse transformations on.
-  
-  Returns:
-    The batch of the size num_images with the same spatial dimensions as the input.
-  """
-  n, h, w, c = imgs.shape
-  assert(n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (n, num_images)
-  outputs = np.zeros((num_images, h, w, c), dtype=np.uint8)
-  for i in range(num_images):
-    outputs[i] = (imgs[i] + IMG_MEAN)[:, :, ::-1].astype(np.uint8)
-  return outputs
+    """Inverse preprocessing of the batch of images.
+        Add the mean vector and convert from BGR to RGB.
+
+    Args:
+        imgs: batch of input images.
+        num_images: number of images to apply the inverse transformations on.
+
+    Returns:
+        The batch of the size num_images with the same spatial dimensions as the input.
+    """
+    n, h, w, c = imgs.shape
+    assert(n >= num_images), 'Batch size %d should be greater or equal than number of images to save %d.' % (n, num_images)
+    outputs = np.zeros((num_images, h, w, c), dtype=np.uint8)
+    for i in range(num_images):
+        outputs[i] = (imgs[i] + IMG_MEAN)[:, :, ::-1].astype(np.uint8)
+    return outputs
 
 
 def save(saver, sess, logdir, step):
-    '''Save weights.   
+    '''Save weights.
     Args:
      saver: TensorFlow Saver object.
      sess: TensorFlow session.
@@ -89,23 +89,24 @@ def save(saver, sess, logdir, step):
      step: current training step.
     '''
     if not os.path.exists(logdir):
-        os.makedirs(logdir)   
+        os.makedirs(logdir)
     model_name = 'model.ckpt'
     checkpoint_path = os.path.join(logdir, model_name)
-      
+
     if not os.path.exists(logdir):
-      os.makedirs(logdir)
+        os.makedirs(logdir)
     saver.save(sess, checkpoint_path, global_step=step)
     print('The checkpoint has been created.')
 
+
 def load(saver, sess, ckpt_path):
     '''Load trained weights.
-    
+
     Args:
       saver: TensorFlow saver object.
       sess: TensorFlow session.
       ckpt_path: path to checkpoint file with parameters.
-    ''' 
+    '''
     ckpt = tf.train.get_checkpoint_state(ckpt_path)
     if ckpt and ckpt.model_checkpoint_path:
         ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
@@ -113,4 +114,4 @@ def load(saver, sess, ckpt_path):
         print("Restored model parameters from {}".format(ckpt_name))
         return True
     else:
-        return False  
+        return False

@@ -44,7 +44,7 @@ class TensorFlowNode(object):
 
     def format(self, arg):
         '''Returns a string representation for the given value.'''
-        return "'%s'" % arg if isinstance(arg, basestring) else str(arg)
+        return "'%s'" % arg if isinstance(arg, str) else str(arg)
 
     def pair(self, key, value):
         '''Returns key=formatted(value).'''
@@ -118,9 +118,9 @@ class TensorFlowMapper(NodeMapper):
                               kernel_params.stride_h, kernel_params.stride_w, **padding)
 
     def map_inner_product(self, node):
-        #TODO: Axis
+        # TODO: Axis
         assert node.parameters.axis == 1
-        #TODO: Unbiased
+        # TODO: Unbiased
         assert node.parameters.bias_term == True
         return MaybeActivated(node)('fc', node.parameters.num_output)
 
