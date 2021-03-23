@@ -64,30 +64,14 @@ def main():
 
     raw_output_all = tf.reduce_mean(tf.stack([head_output, tail_output_rev]), axis=0)
     raw_output_all = tf.expand_dims(raw_output_all, dim=0)
-    pred_scores = tf.reduce_max(raw_output_all, axis=3)
     raw_output_all = tf.argmax(raw_output_all, axis=3)
-    pred_all = tf.expand_dims(raw_output_all, dim=3) # Create 4-d tensor.
+    pred_all = tf.expand_dims(raw_output_all, dim=3)  # Create 4-d tensor.
 
     raw_edge = tf.reduce_mean(tf.stack([edge_out2]), axis=0)
     head_output, tail_output = tf.unstack(raw_edge, num=2, axis=0)
     tail_output_rev = tf.reverse(tail_output, tf.stack([1]))
     raw_edge_all = tf.reduce_mean(tf.stack([head_output, tail_output_rev]), axis=0)
     raw_edge_all = tf.expand_dims(raw_edge_all, dim=0)
-    pred_edge = tf.sigmoid(raw_edge_all)
-    res_edge = tf.cast(tf.greater(pred_edge, 0.5), tf.int32)
-
-    # prepare ground truth
-    preds = tf.reshape(pred_all, [-1, ])
-    gt = tf.reshape(label_batch, [-1, ])
-    weights = tf.cast(tf.less_equal(gt, N_CLASSES - 1), tf.int32)  # Ignoring all labels greater than or equal to n_classes.
-    mIoU, update_op_iou = tf.contrib.metrics.streaming_mean_iou(preds, gt, num_classes=N_CLASSES, weights=weights)
-    macc, update_op_acc = tf.contrib.metrics.streaming_accuracy(preds, gt, weights=weights)
-
-    # precision and recall
-    recall, update_op_recall = tf.contrib.metrics.streaming_recall(res_edge, edge_gt_batch)
-    precision, update_op_precision = tf.contrib.metrics.streaming_precision(res_edge, edge_gt_batch)
-
-    update_op = tf.group(update_op_iou, update_op_acc, update_op_recall, update_op_precision)
 
     # Which variables to load.
     restore_var = tf.global_variables()
@@ -117,7 +101,7 @@ def main():
         os.makedirs(parsing_dir)
 
     for step in range(NUM_STEPS):
-        parsing_, scores, edge_, _ = sess.run([pred_all, pred_scores, pred_edge, update_op])
+        parsing_ = sess.run(pred_all)
         img_split = image_list[step].split('/')
         img_id = img_split[-1][:-4]
 
