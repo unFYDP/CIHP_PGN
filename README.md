@@ -16,7 +16,11 @@ The PGN is trained and evaluated on our [CIHP dataset](http://www.sysu-hcp.net/l
 
 We have released our trained models of PGN on CIHP dataset at [google drive](https://drive.google.com/open?id=1Mqpse5Gen4V4403wFEpv3w3JAsWw2uhk).
 
-### Inference
+### Simple Inference
+Use if you only want the segmented results from input images without evaluating the results.
+1. Download the pre-trained model and store in $HOME/checkpoint.
+2. Run `infer.py -i <input_dir> -o <output_dir>`.
+### Detailed Inference
 1. Download the pre-trained model and store in $HOME/checkpoint.
 2. Prepare the images and store in $HOME/datasets.
 3. Run test_pgn.py.
