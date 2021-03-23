@@ -16,8 +16,10 @@ def main(input_dir, output_dir, checkpoint_dir):
 
     # Load input
     input_files = sorted(glob(os.path.join(input_dir, '*')))
-
-    img = tf.io.decode_image(tf.read_file(tf.convert_to_tensor(input_files, dtype=tf.string)), channels=3)
+    input_files = tf.convert_to_tensor(input_files, dtype=tf.string)
+    input_queue = tf.train.slice_input_producer([input_files])
+    img_contents = tf.io.read_file(input_queue[0])
+    img = tf.io.decode_jpeg(img_contents, channels=3)
     img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
     image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
     # TODO: Subtract by mean (see image_reader)
@@ -110,16 +112,19 @@ if __name__ == '__main__':
     parser.add_argument(
         'input_dir',
         type=str,
+        default='datasets/images',
         help='Input images directory')
 
     parser.add_argument(
         'output_dir',
         type=str,
+        default='output',
         help='Output directory for segmented masks')
 
     parser.add_argument(
         'checkpoint_dir',
         type=str,
+        default='checkpoint/CIHP_pgn',
         help='Checkpoints directory')
 
     args = parser.parse_args()
