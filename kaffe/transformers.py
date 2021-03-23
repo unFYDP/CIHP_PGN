@@ -218,7 +218,7 @@ class BatchNormScaleBiasFuser(SubNodeFuser):
 
     def is_eligible_pair(self, parent, child):
         return (parent.kind == NodeKind.BatchNorm and child.kind == NodeKind.Scale and
-                child.parameters.axis == 1 and child.parameters.bias_term == True)
+                child.parameters.axis == 1 and child.parameters.bias_term is True)
 
     def merge(self, parent, child):
         parent.scale_bias_node = child

@@ -1,9 +1,10 @@
 from google.protobuf import text_format
 
 from .caffe import get_caffe_resolver
-from .errors import KaffeError, print_stderr
+from .errors import KaffeError
 from .layers import LayerAdapter, LayerType, NodeKind, NodeDispatch
 from .shapes import TensorShape
+
 
 class Node(object):
 
@@ -232,7 +233,7 @@ class GraphBuilder(object):
                 if (parent_node is None) or (parent_node == node):
                     parent_node = graph.get_node(input_name)
                 node.add_parent(parent_node)
-            if len(layer.top)>1:
+            if len(layer.top) > 1:
                 raise KaffeError('Multiple top nodes are not supported.')
             for output_name in layer.top:
                 if output_name == layer.name:

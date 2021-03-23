@@ -43,7 +43,7 @@ def shape_data(node):
     try:
         # New-style input specification
         return map(int, node.parameters.shape[0].dim)
-    except:
+    except Exception:
         # We most likely have a data layer on our hands. The problem is,
         # Caffe infers the dimensions of the data from the source (eg: LMDB).
         # We want to avoid reading datasets here. Fail for now.

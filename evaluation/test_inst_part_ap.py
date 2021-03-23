@@ -1,4 +1,3 @@
-from __future__ import division
 import os
 from PIL import Image
 import numpy as np
@@ -7,11 +6,12 @@ PREDICT_DIR = '../output/cihp_instance_part_maps'
 INST_PART_GT_DIR = './Instance_part_val'
 
 CLASSES = ['background', 'hat', 'hair', 'glove', 'sunglasses', 'upperclothes',
-               'dress', 'coat', 'socks', 'pants', 'tosor-skin', 'scarf', 'skirt',
-               'face', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg', 'leftShoe', 'rightShoe']
+           'dress', 'coat', 'socks', 'pants', 'tosor-skin', 'scarf', 'skirt',
+           'face', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg', 'leftShoe', 'rightShoe']
 
 IOU_THRE = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-#IOU_THRE = [0.1]
+# IOU_THRE = [0.1]
+
 
 # compute mask overlap
 def compute_mask_iou(mask_gt, masks_pre, mask_gt_area, masks_pre_area):
@@ -25,7 +25,7 @@ def compute_mask_iou(mask_gt, masks_pre, mask_gt_area, masks_pre_area):
           efficency. Calculate once in the caller to avoid duplicate work.
     """
     intersection = np.logical_and(mask_gt, masks_pre)
-    intersection = np.where(intersection == True, 1, 0).astype(np.uint8)
+    intersection = np.where(intersection is True, 1, 0).astype(np.uint8)
     intersection = NonZero(intersection)
 
     # print('intersection:', intersection)
@@ -45,14 +45,13 @@ def NonZero(masks):
     :param masks: [N,h,w] a three-dimension array, includes N two-dimension mask arrays
     :return: (N) return a tuple with length N. N is the number of non-zero elements in the two-dimension mask
     """
-    area = []  
+    area = []
     # print('NonZero masks',masks.shape)
     for i in masks:
         _, a = np.nonzero(i)
         area.append(a.shape[0])
     area = tuple(area)
     return area
-
 
 
 def compute_mask_overlaps(masks_pre, masks_gt):
@@ -80,6 +79,7 @@ def compute_mask_overlaps(masks_pre, masks_gt):
         overlaps[:, i] = compute_mask_iou(mask_gt, masks_pre, area2[i], area1)
 
     return overlaps
+
 
 def voc_ap(rec, prec, use_07_metric=False):
     """
@@ -120,12 +120,13 @@ def voc_ap(rec, prec, use_07_metric=False):
         ap = np.sum((mrec[i + 1] - mrec[i]) * mpre[i + 1])
     return ap
 
+
 def convert2evalformat(inst_id_map, id_to_convert=None):
     """
-    param: 
+    param:
         inst_id_map:[h, w]
         id_to_convert: a set
-    return: 
+    return:
         masks:[instances,h, w]
     """
     masks = []
@@ -135,7 +136,7 @@ def convert2evalformat(inst_id_map, id_to_convert=None):
     background_ind = np.where(inst_ids == 0)[0]
     inst_ids = np.delete(inst_ids, background_ind)
 
-    if id_to_convert == None:
+    if id_to_convert is None:
         for i in inst_ids:
             im_mask = (inst_id_map == i).astype(np.uint8)
             masks.append(im_mask)
@@ -147,6 +148,7 @@ def convert2evalformat(inst_id_map, id_to_convert=None):
             masks.append(im_mask)
 
     return masks, len(masks)
+
 
 def compute_class_ap(image_id_list, class_id, iou_threshold):
     """Compute Average Precision at a set IoU threshold (default 0.5).
@@ -172,7 +174,7 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
     for i in range(iou_thre_num):
         tp.append([])
         fp.append([])
-    
+
     print("process class", CLASSES[class_id], class_id)
 
     for image_id in image_id_list:
@@ -186,7 +188,6 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
             line = line.strip().split(' ')
             gt_part_id.append([int(line[0]), int(line[1])])
         rfp.close()
-
 
         pre_img = Image.open(os.path.join(PREDICT_DIR, '%s.png' % image_id))
         pre_img = np.array(pre_img)
@@ -206,10 +207,8 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
             if gt_part_id[i][1] == class_id:
                 gt_id.append(gt_part_id[i][0])
 
-
         gt_mask, n_gt_inst = convert2evalformat(inst_part_gt, set(gt_id))
         pre_mask, n_pre_inst = convert2evalformat(pre_img, set(pre_id))
-
 
         gt_mask_num += n_gt_inst
         pre_mask_num += n_pre_inst
@@ -218,7 +217,7 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
             continue
 
         scores += pre_scores
-        
+
         if n_gt_inst == 0:
             for i in range(n_pre_inst):
                 for k in range(iou_thre_num):
@@ -235,7 +234,7 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
 
         max_overlap_ind = np.argmax(overlaps, axis=1)
 
-         # l = len(overlaps[:,max_overlap_ind])
+        # l = len(overlaps[:,max_overlap_ind])
         for i in np.arange(len(max_overlap_ind)):
             max_iou = overlaps[i][max_overlap_ind[i]]
             # print('max_iou :', max_iou)
@@ -248,7 +247,6 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
                     fp[k].append(1)
 
     ind = np.argsort(scores)[::-1]
-
 
     for k in range(iou_thre_num):
         m_tp = tp[k]
@@ -268,9 +266,8 @@ def compute_class_ap(image_id_list, class_id, iou_threshold):
 
         # Compute mean AP over recall range
         ap[k] = voc_ap(recall, precition, False)
-        
-    return ap
 
+    return ap
 
 
 if __name__ == '__main__':
