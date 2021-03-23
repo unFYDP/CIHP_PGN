@@ -8,6 +8,7 @@ from utils import *
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 N_CLASSES = 20
+INPUT_RESIZE = 1024
 
 
 def main(input_dir, output_dir, checkpoint_dir):
@@ -19,6 +20,8 @@ def main(input_dir, output_dir, checkpoint_dir):
     input_queue = tf.train.slice_input_producer([tf.convert_to_tensor(input_files, dtype=tf.string)])
     img_contents = tf.io.read_file(input_queue[0])
     img = tf.io.decode_jpeg(img_contents, channels=3)
+    # Resize to prevent OOM
+    img = tf.image.resize(img, [INPUT_RESIZE, INPUT_RESIZE], preserve_aspect_ratio=True)
     img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
     image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
     # TODO: Subtract by mean (see image_reader)
