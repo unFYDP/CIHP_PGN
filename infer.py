@@ -1,6 +1,4 @@
 import os
-import scipy.io as sio
-import cv2
 import tensorflow as tf
 from PIL import Image
 from utils import *
@@ -29,7 +27,7 @@ def main():
         image_list = reader.image_list
 
     image_batch = tf.stack([image, image_rev])
-    label_batch = tf.expand_dims(label, dim=0) # Add one batch dimension.
+    label_batch = tf.expand_dims(label, dim=0)  # Add one batch dimension.
     edge_gt_batch = tf.expand_dims(edge_gt, dim=0)
 
     # Create network
@@ -79,9 +77,9 @@ def main():
     res_edge = tf.cast(tf.greater(pred_edge, 0.5), tf.int32)
 
     # prepare ground truth
-    preds = tf.reshape(pred_all, [-1,])
-    gt = tf.reshape(label_batch, [-1,])
-    weights = tf.cast(tf.less_equal(gt, N_CLASSES - 1), tf.int32) # Ignoring all labels greater than or equal to n_classes.
+    preds = tf.reshape(pred_all, [-1, ])
+    gt = tf.reshape(label_batch, [-1, ])
+    weights = tf.cast(tf.less_equal(gt, N_CLASSES - 1), tf.int32)  # Ignoring all labels greater than or equal to n_classes.
     mIoU, update_op_iou = tf.contrib.metrics.streaming_mean_iou(preds, gt, num_classes=N_CLASSES, weights=weights)
     macc, update_op_acc = tf.contrib.metrics.streaming_accuracy(preds, gt, weights=weights)
 
@@ -113,37 +111,19 @@ def main():
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
-    # evaluate prosessing
-    parsing_dir = './output/cihp_parsing_maps'
+    # Iterate over training steps and output
+    parsing_dir = './output'
     if not os.path.exists(parsing_dir):
         os.makedirs(parsing_dir)
-    edge_dir = './output/cihp_edge_maps'
-    if not os.path.exists(edge_dir):
-        os.makedirs(edge_dir)
-    # Iterate over training steps.
+
     for step in range(NUM_STEPS):
         parsing_, scores, edge_, _ = sess.run([pred_all, pred_scores, pred_edge, update_op])
-        if step % 100 == 0:
-            print('step {:d}'.format(step))
-            print(image_list[step])
         img_split = image_list[step].split('/')
         img_id = img_split[-1][:-4]
 
         msk = decode_labels(parsing_, num_classes=N_CLASSES)
         parsing_im = Image.fromarray(msk[0])
         parsing_im.save('{}/{}_vis.png'.format(parsing_dir, img_id))
-        cv2.imwrite('{}/{}.png'.format(parsing_dir, img_id), parsing_[0,:,:,0])
-        sio.savemat('{}/{}.mat'.format(parsing_dir, img_id), {'data': scores[0,:,:]})
-
-        cv2.imwrite('{}/{}.png'.format(edge_dir, img_id), edge_[0,:,:,0] * 255)
-
-    res_mIou = mIoU.eval(session=sess)
-    res_macc = macc.eval(session=sess)
-    res_recall = recall.eval(session=sess)
-    res_precision = precision.eval(session=sess)
-    f1 = 2 * res_precision * res_recall / (res_precision + res_recall)
-    print('Mean IoU: {:.4f}, Mean Acc: {:.4f}'.format(res_mIou, res_macc))
-    print('Recall: {:.4f}, Precision: {:.4f}, F1 score: {:.4f}'.format(res_recall, res_precision, f1))
 
     coord.request_stop()
     coord.join(threads)
