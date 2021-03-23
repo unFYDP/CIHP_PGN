@@ -16,8 +16,7 @@ def main(input_dir, output_dir, checkpoint_dir):
 
     # Load input
     input_files = sorted(glob(os.path.join(input_dir, '*')))
-    input_files = tf.convert_to_tensor(input_files, dtype=tf.string)
-    input_queue = tf.train.slice_input_producer([input_files])
+    input_queue = tf.train.slice_input_producer([tf.convert_to_tensor(input_files, dtype=tf.string)])
     img_contents = tf.io.read_file(input_queue[0])
     img = tf.io.decode_jpeg(img_contents, channels=3)
     img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
@@ -110,19 +109,22 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        'input_dir',
+        '--input_dir',
+        '-i',
         type=str,
-        default='datasets/images',
+        default='datasets/CIHP/images',
         help='Input images directory')
 
     parser.add_argument(
-        'output_dir',
+        '--output_dir',
+        '-o',
         type=str,
         default='output',
         help='Output directory for segmented masks')
 
     parser.add_argument(
-        'checkpoint_dir',
+        '--checkpoint_dir',
+        '-c',
         type=str,
         default='checkpoint/CIHP_pgn',
         help='Checkpoints directory')
