@@ -1,34 +1,29 @@
 import os
+import argparse
 import tensorflow as tf
 from PIL import Image
+from glob import glob
 from utils import *
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 N_CLASSES = 20
-DATA_DIR = './datasets/CIHP'
-LIST_PATH = './datasets/CIHP/list/val.txt'
-DATA_ID_LIST = './datasets/CIHP/list/val_id.txt'
-with open(DATA_ID_LIST, 'r') as f:
-    NUM_STEPS = len(f.readlines())
-RESTORE_FROM = './checkpoint/CIHP_pgn'
 
 
-def main():
-    """Create the model and start the evaluation process."""
-
+def main(input_dir, output_dir, checkpoint_dir):
     # Create queue coordinator.
     coord = tf.train.Coordinator()
-    # Load reader.
-    with tf.name_scope("create_inputs"):
-        reader = ImageReader(DATA_DIR, LIST_PATH, DATA_ID_LIST, None, False, False, False, coord)
-        image, label, edge_gt = reader.image, reader.label, reader.edge
-        image_rev = tf.reverse(image, tf.stack([1]))
-        image_list = reader.image_list
+
+    # Load input
+    input_files = sorted(glob(os.path.join(input_dir, '*')))
+
+    img = tf.io.decode_image(tf.read_file(tf.convert_to_tensor(input_files, dtype=tf.string)), channels=3)
+    img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
+    image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
+    # TODO: Subtract by mean (see image_reader)
+    image_rev = tf.reverse(image, tf.stack([1]))
 
     image_batch = tf.stack([image, image_rev])
-    label_batch = tf.expand_dims(label, dim=0)  # Add one batch dimension.
-    edge_gt_batch = tf.expand_dims(edge_gt, dim=0)
 
     # Create network
     with tf.variable_scope('', reuse=False):
@@ -86,32 +81,46 @@ def main():
 
     # Load weights.
     loader = tf.train.Saver(var_list=restore_var)
-    if RESTORE_FROM is not None:
-        if load(loader, sess, RESTORE_FROM):
-            print(" [*] Load SUCCESS")
-        else:
-            print(" [!] Load failed...")
+
+    if not load(loader, sess, checkpoint_dir):
+        raise IOError('Checkpoint loading failed')
 
     # Start queue threads.
     threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
     # Iterate over training steps and output
-    parsing_dir = './output'
-    if not os.path.exists(parsing_dir):
-        os.makedirs(parsing_dir)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    for step in range(NUM_STEPS):
+    for input_file in input_files:
         parsing_ = sess.run(pred_all)
-        img_split = image_list[step].split('/')
-        img_id = img_split[-1][:-4]
+        img_id = os.path.splitext(os.path.basename(input_file))[0]
 
         msk = decode_labels(parsing_, num_classes=N_CLASSES)
         parsing_im = Image.fromarray(msk[0])
-        parsing_im.save('{}/{}_vis.png'.format(parsing_dir, img_id))
+        parsing_im.save('{}/{}.png'.format(output_dir, img_id))
 
     coord.request_stop()
     coord.join(threads)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        'input_dir',
+        type=str,
+        help='Input images directory')
+
+    parser.add_argument(
+        'output_dir',
+        type=str,
+        help='Output directory for segmented masks')
+
+    parser.add_argument(
+        'checkpoint_dir',
+        type=str,
+        help='Checkpoints directory')
+
+    args = parser.parse_args()
+    main(args.input_dir, args.output_dir, args.checkpoint_dir)
