@@ -17,7 +17,7 @@ def main(input_dir, output_dir, checkpoint_dir):
 
     # Load input
     input_files = sorted(glob(os.path.join(input_dir, '*')))
-    input_queue = tf.train.slice_input_producer([tf.convert_to_tensor(input_files, dtype=tf.string)])
+    input_queue = tf.train.slice_input_producer([tf.convert_to_tensor(input_files, dtype=tf.string)], shuffle=False)
     img_contents = tf.io.read_file(input_queue[0])
     img = tf.io.decode_jpeg(img_contents, channels=3)
     # Resize to prevent OOM
