@@ -28,23 +28,40 @@ def main(input_dir, output_dir, checkpoint_dir):
     image_rev = tf.reverse(image, tf.stack([1]))
 
     image_batch = tf.stack([image, image_rev])
+    image_batch050 = tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, 0.50)), tf.to_int32(tf.multiply(w_orig, 0.50))]))
+    image_batch150 = tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, 1.50)), tf.to_int32(tf.multiply(w_orig, 1.50))]))
 
     # Create network
     with tf.variable_scope('', reuse=False):
-        net = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
+        net_100 = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
+    with tf.variable_scope('', reuse=False):
+        net_050 = PGNModel({'data': image_batch050}, is_training=False, n_classes=N_CLASSES)
+    with tf.variable_scope('', reuse=False):
+        net_150 = PGNModel({'data': image_batch150}, is_training=False, n_classes=N_CLASSES)
 
     # parsing net
-    parsing_out1 = net.layers['parsing_fc']
-    parsing_out2 = net.layers['parsing_rf_fc']
+    parsing_out1_100 = net_100.layers['parsing_fc']
+    parsing_out1_050 = net_050.layers['parsing_fc']
+    parsing_out1_150 = net_150.layers['parsing_fc']
+    parsing_out2_100 = net_100.layers['parsing_rf_fc']
+    parsing_out2_050 = net_050.layers['parsing_rf_fc']
+    parsing_out2_150 = net_150.layers['parsing_rf_fc']
 
     # edge net
-    edge_out2 = net.layers['edge_rf_fc']
+    edge_out2_100 = net_100.layers['edge_rf_fc']
+    edge_out2_150 = net_150.layers['edge_rf_fc']
 
     # combine resize
-    parsing_out1 = tf.image.resize_images(parsing_out1, tf.shape(image_batch)[1: 3, ])
-    parsing_out2 = tf.image.resize_images(parsing_out2, tf.shape(image_batch)[1: 3, ])
+    parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out1_050, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_100, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out1_150, tf.shape(image_batch)[1: 3, ]), axis=0)
+    parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out2_050, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_100, tf.shape(image_batch)[1: 3, ]),
+                                            tf.image.resize_images(parsing_out2_150, tf.shape(image_batch)[1: 3, ]), axis=0)
 
-    edge_out2 = tf.image.resize_images(edge_out2, tf.shape(image_batch)[1: 3, ])
+    edge_out2_100 = tf.image.resize_images(edge_out2_100, tf.shape(image_batch)[1: 3, ])
+    edge_out2_150 = tf.image.resize_images(edge_out2_150, tf.shape(image_batch)[1: 3, ])
+    edge_out2 = tf.reduce_mean(tf.stack([edge_out2_100, edge_out2_150]), axis=0)
 
     raw_output = tf.reduce_mean(tf.stack([parsing_out1, parsing_out2]), axis=0)
     head_output, tail_output = tf.unstack(raw_output, num=2, axis=0)
