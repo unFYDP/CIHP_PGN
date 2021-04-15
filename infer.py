@@ -37,9 +37,9 @@ def main(input_dir, output_dir, checkpoint_dir):
     # Create network
     with tf.variable_scope('', reuse=False):
         net_100 = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
-    with tf.variable_scope('', reuse=False):
+    with tf.variable_scope('', reuse=True):
         net_050 = PGNModel({'data': image_batch050}, is_training=False, n_classes=N_CLASSES)
-    with tf.variable_scope('', reuse=False):
+    with tf.variable_scope('', reuse=True):
         net_150 = PGNModel({'data': image_batch150}, is_training=False, n_classes=N_CLASSES)
 
     # parsing net
