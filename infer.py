@@ -28,6 +28,9 @@ def main(input_dir, output_dir, checkpoint_dir):
     image_rev = tf.reverse(image, tf.stack([1]))
 
     image_batch = tf.stack([image, image_rev])
+    h_orig, w_orig = tf.to_float(tf.shape(image_batch)[1]), tf.to_float(tf.shape(image_batch)[2])
+
+    # Additional batches for accuracy
     image_batch050 = tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, 0.50)), tf.to_int32(tf.multiply(w_orig, 0.50))]))
     image_batch150 = tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, 1.50)), tf.to_int32(tf.multiply(w_orig, 1.50))]))
 
