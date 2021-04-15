@@ -54,10 +54,10 @@ def main(input_dir, output_dir, checkpoint_dir):
     # combine resize
     parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out1_050, tf.shape(image_batch)[1: 3, ]),
                                             tf.image.resize_images(parsing_out1_100, tf.shape(image_batch)[1: 3, ]),
-                                            tf.image.resize_images(parsing_out1_150, tf.shape(image_batch)[1: 3, ]), axis=0)
+                                            tf.image.resize_images(parsing_out1_150, tf.shape(image_batch)[1: 3, ])]), axis=0)
     parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out2_050, tf.shape(image_batch)[1: 3, ]),
                                             tf.image.resize_images(parsing_out2_100, tf.shape(image_batch)[1: 3, ]),
-                                            tf.image.resize_images(parsing_out2_150, tf.shape(image_batch)[1: 3, ]), axis=0)
+                                            tf.image.resize_images(parsing_out2_150, tf.shape(image_batch)[1: 3, ])]), axis=0)
 
     edge_out2_100 = tf.image.resize_images(edge_out2_100, tf.shape(image_batch)[1: 3, ])
     edge_out2_150 = tf.image.resize_images(edge_out2_150, tf.shape(image_batch)[1: 3, ])
