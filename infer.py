@@ -1,5 +1,7 @@
 import os
 import argparse
+import cv2
+import numpy as np
 import tensorflow as tf
 from PIL import Image
 from glob import glob
@@ -25,7 +27,12 @@ def main(input_dir, output_dir, checkpoint_dir):
     img = tf.image.resize(img, [INPUT_RESIZE, INPUT_RESIZE], preserve_aspect_ratio=True)
     img_r, img_g, img_b = tf.split(value=img, num_or_size_splits=3, axis=2)
     image = tf.cast(tf.concat([img_b, img_g, img_r], 2), dtype=tf.float32)
-    # TODO: Subtract by mean (see image_reader)
+
+    sample_img = cv2.imread(input_files[0])
+    img_mean = np.mean(sample_img, axis=(0, 1))
+
+    image -= img_mean
+
     image_rev = tf.reverse(image, tf.stack([1]))
 
     image_batch = tf.stack([image, image_rev])
