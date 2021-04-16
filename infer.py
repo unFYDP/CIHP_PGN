@@ -49,7 +49,6 @@ def main(input_dir, output_dir, checkpoint_dir):
     parsing_out1s = [net.layers['parsing_fc'] for net in [orig_net] + alt_nets]
     parsing_out2s = [net.layers['parsing_rf_fc'] for net in [orig_net] + alt_nets]
 
-
     # edge nets
     edge_out2s = []
     for size, net in zip([1.] + BATCH_ALT_SIZES, [orig_net] + alt_nets):
