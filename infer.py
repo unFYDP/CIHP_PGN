@@ -59,7 +59,7 @@ def main(input_dir, output_dir, checkpoint_dir):
     parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(po, tf.shape(image_batch)[1:3, ]) for po in parsing_out1s]), axis=0)
     parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(po, tf.shape(image_batch)[1:3, ]) for po in parsing_out2s]), axis=0)
 
-    edge_out2s = tf.reduce_mean(tf.stack([tf.image.resize_images(eo, tf.shape(image_batch)[1:3, ]) for eo in edge_out2s]), axis=0)
+    edge_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(eo, tf.shape(image_batch)[1:3, ]) for eo in edge_out2s]), axis=0)
 
     raw_output = tf.reduce_mean(tf.stack([parsing_out1, parsing_out2]), axis=0)
     head_output, tail_output = tf.unstack(raw_output, num=2, axis=0)
