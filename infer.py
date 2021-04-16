@@ -8,7 +8,8 @@ from utils import *
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 N_CLASSES = 20
-INPUT_RESIZE = 1024
+INPUT_RESIZE = 1080
+BATCH_ALT_SIZES = [0.5, 0.75, 1.25, 1.50, 1.75]
 
 
 def main(input_dir, output_dir, checkpoint_dir):
@@ -31,40 +32,35 @@ def main(input_dir, output_dir, checkpoint_dir):
     h_orig, w_orig = tf.to_float(tf.shape(image_batch)[1]), tf.to_float(tf.shape(image_batch)[2])
 
     # Additional batches for accuracy
-    image_batch050 = tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, 0.50)), tf.to_int32(tf.multiply(w_orig, 0.50))]))
-    image_batch150 = tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, 1.50)), tf.to_int32(tf.multiply(w_orig, 1.50))]))
+    alt_image_batches = []
+    for size in BATCH_ALT_SIZES:
+        alt_image_batches.append(tf.image.resize_images(image_batch, tf.stack([tf.to_int32(tf.multiply(h_orig, size)), tf.to_int32(tf.multiply(w_orig, size))])))
 
-    # Create network
+    # Create networks
     with tf.variable_scope('', reuse=False):
-        net_100 = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
-    with tf.variable_scope('', reuse=True):
-        net_050 = PGNModel({'data': image_batch050}, is_training=False, n_classes=N_CLASSES)
-    with tf.variable_scope('', reuse=True):
-        net_150 = PGNModel({'data': image_batch150}, is_training=False, n_classes=N_CLASSES)
+        orig_net = PGNModel({'data': image_batch}, is_training=False, n_classes=N_CLASSES)
 
-    # parsing net
-    parsing_out1_100 = net_100.layers['parsing_fc']
-    parsing_out1_050 = net_050.layers['parsing_fc']
-    parsing_out1_150 = net_150.layers['parsing_fc']
-    parsing_out2_100 = net_100.layers['parsing_rf_fc']
-    parsing_out2_050 = net_050.layers['parsing_rf_fc']
-    parsing_out2_150 = net_150.layers['parsing_rf_fc']
+    alt_nets = []
+    for batch in alt_image_batches:
+        with tf.variable_scope('', reuse=True):
+            alt_nets.append(PGNModel({'data': batch}, is_training=False, n_classes=N_CLASSES))
 
-    # edge net
-    edge_out2_100 = net_100.layers['edge_rf_fc']
-    edge_out2_150 = net_150.layers['edge_rf_fc']
+    # parsing nets
+    parsing_out1s = [net.layers['parsing_fc'] for net in [orig_net] + alt_nets]
+    parsing_out2s = [net.layers['parsing_rf_fc'] for net in [orig_net] + alt_nets]
+
+
+    # edge nets
+    edge_out2s = []
+    for size, net in zip([1.] + BATCH_ALT_SIZES, [orig_net] + alt_nets):
+        if size >= 1:
+            edge_out2s.append(net.layers['edge_rf_fc'])
 
     # combine resize
-    parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out1_050, tf.shape(image_batch)[1: 3, ]),
-                                            tf.image.resize_images(parsing_out1_100, tf.shape(image_batch)[1: 3, ]),
-                                            tf.image.resize_images(parsing_out1_150, tf.shape(image_batch)[1: 3, ])]), axis=0)
-    parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(parsing_out2_050, tf.shape(image_batch)[1: 3, ]),
-                                            tf.image.resize_images(parsing_out2_100, tf.shape(image_batch)[1: 3, ]),
-                                            tf.image.resize_images(parsing_out2_150, tf.shape(image_batch)[1: 3, ])]), axis=0)
+    parsing_out1 = tf.reduce_mean(tf.stack([tf.image.resize_images(po, tf.shape(image_batch)[1:3, ]) for po in parsing_out1s]), axis=0)
+    parsing_out2 = tf.reduce_mean(tf.stack([tf.image.resize_images(po, tf.shape(image_batch)[1:3, ]) for po in parsing_out2s]), axis=0)
 
-    edge_out2_100 = tf.image.resize_images(edge_out2_100, tf.shape(image_batch)[1: 3, ])
-    edge_out2_150 = tf.image.resize_images(edge_out2_150, tf.shape(image_batch)[1: 3, ])
-    edge_out2 = tf.reduce_mean(tf.stack([edge_out2_100, edge_out2_150]), axis=0)
+    edge_out2s = tf.reduce_mean(tf.stack([tf.image.resize_images(eo, tf.shape(image_batch)[1:3, ]) for eo in edge_out2s]), axis=0)
 
     raw_output = tf.reduce_mean(tf.stack([parsing_out1, parsing_out2]), axis=0)
     head_output, tail_output = tf.unstack(raw_output, num=2, axis=0)
